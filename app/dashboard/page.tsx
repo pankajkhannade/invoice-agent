@@ -3,6 +3,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import FollowUpModal from "./FollowUpModal";
 
 type Invoice = {
   id: string;
@@ -39,6 +40,7 @@ function DashboardContent() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [previewModal, setPreviewModal] = useState<{ invoiceId: string; invoiceName: string; step: number } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -51,16 +53,6 @@ function DashboardContent() {
         .then(data => { setInvoices(Array.isArray(data) ? data : []); setLoading(false); });
     }
   }, [status]);
-
-  async function handleFollowUp(invoiceId: string) {
-    setSendingId(invoiceId);
-    const res = await fetch(`/api/invoices/${invoiceId}/followup`, { method: "POST" });
-    if (res.ok) {
-      const data = await fetch("/api/invoices").then(r => r.json());
-      setInvoices(Array.isArray(data) ? data : []);
-    }
-    setSendingId(null);
-  }
 
   async function handleMarkPaid(invoiceId: string) {
     await fetch(`/api/invoices/${invoiceId}`, {
@@ -86,6 +78,9 @@ function DashboardContent() {
       <nav className="bg-white border-b px-8 py-4 flex items-center justify-between">
         <Link href="/" className="text-lg font-bold text-indigo-700">InvoiceAgent</Link>
         <div className="flex items-center gap-6">
+          <Link href="/dashboard/analytics" className="text-sm text-gray-500 hover:text-gray-700">Analytics</Link>
+          <Link href="/dashboard/clients" className="text-sm text-gray-500 hover:text-gray-700">Clients</Link>
+          <Link href="/dashboard/settings" className="text-sm text-gray-500 hover:text-gray-700">Settings</Link>
           <span className="text-sm text-gray-600">{session?.user?.email}</span>
           <Link href="/pricing" className="text-sm text-indigo-600 font-medium">Upgrade</Link>
           <button onClick={() => signOut({ callbackUrl: "/" })} className="text-sm text-gray-500 hover:text-gray-700">Sign out</button>
@@ -139,7 +134,7 @@ function DashboardContent() {
               </thead>
               <tbody className="divide-y">
                 {invoices.map(inv => (
-                  <tr key={inv.id} className="hover:bg-gray-50">
+                  <tr key={inv.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}>
                     <td className="px-4 py-4">
                       <div className="font-medium text-gray-900">{inv.clientName}</div>
                       <div className="text-gray-500">{inv.clientEmail}</div>
@@ -158,11 +153,11 @@ function DashboardContent() {
                       <div className="flex gap-2">
                         {inv.status !== "paid" && inv.status !== "cancelled" && inv.followUpStep < 3 && (
                           <button
-                            onClick={() => handleFollowUp(inv.id)}
+                            onClick={() => setPreviewModal({ invoiceId: inv.id, invoiceName: inv.clientName, step: inv.followUpStep + 1 })}
                             disabled={sendingId === inv.id}
                             className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded font-medium hover:bg-indigo-100 disabled:opacity-50"
                           >
-                            {sendingId === inv.id ? "Sending..." : `Send step ${inv.followUpStep + 1}`}
+                            Send step {inv.followUpStep + 1}
                           </button>
                         )}
                         {inv.status !== "paid" && (
@@ -180,6 +175,22 @@ function DashboardContent() {
               </tbody>
             </table>
           </div>
+        )}
+        {previewModal && (
+          <FollowUpModal
+            invoiceId={previewModal.invoiceId}
+            invoiceName={previewModal.invoiceName}
+            step={previewModal.step}
+            onClose={() => setPreviewModal(null)}
+            onSent={() => {
+              const id = previewModal.invoiceId;
+              setPreviewModal(null);
+              setSendingId(id);
+              fetch("/api/invoices")
+                .then((r) => r.json())
+                .then((data) => { setInvoices(Array.isArray(data) ? data : []); setSendingId(null); });
+            }}
+          />
         )}
       </div>
     </div>

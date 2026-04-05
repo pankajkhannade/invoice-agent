@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendFollowUp } from "@/lib/followup";
 
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -17,6 +17,13 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "All follow-up steps already sent" }, { status: 400 });
   }
 
-  const result = await sendFollowUp(params.id);
+  const body = await req.json().catch(() => ({}));
+  const result = await sendFollowUp(params.id, body.subject, body.body);
+  if (result.error) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: 500 }
+    );
+  }
   return NextResponse.json({ ok: true, ...result });
 }

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const results: {
     overdueMarked: string[];
-    followUpsSent: { invoiceId: string; step: number; subject: string }[];
+    followUpsSent: { invoiceId: string; step?: number; subject?: string; error?: string }[];
     errors: { invoiceId: string; error: string }[];
   } = {
     overdueMarked: [],

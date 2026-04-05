@@ -26,15 +26,22 @@ export default function NewInvoicePage() {
     });
     if (!res.ok) {
       const data = await res.json();
-      if (data.error?.includes("Upgrade")) {
-        router.push("/pricing");
+      if (data.upgrade) {
+        setError("You've reached your plan's invoice limit. Upgrade to Growth for unlimited invoices.");
+        setLoading(false);
         return;
       }
       setError(data.error || "Failed to create invoice");
       setLoading(false);
       return;
     }
-    router.push("/dashboard");
+    const created = await res.json();
+    const qs = new URLSearchParams({
+      client: encodeURIComponent(created.clientName || form.clientName),
+      amount: encodeURIComponent(String(created.amount || form.amount)),
+      currency: encodeURIComponent(created.currency || form.currency),
+    });
+    router.push(`/dashboard/invoices/success?${qs}`);
   }
 
   return (
@@ -49,7 +56,16 @@ export default function NewInvoicePage() {
         <div className="bg-white rounded-xl border p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Add invoice</h1>
 
-          {error && <p className="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4">{error}</p>}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg mb-4">
+              {error}
+              <div className="mt-2">
+                <Link href="/pricing" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700">
+                  Upgrade to Growth
+                </Link>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">

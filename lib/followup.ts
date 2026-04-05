@@ -1,14 +1,38 @@
 import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SERVER_HOST,
-  port: Number(process.env.EMAIL_SERVER_PORT || 587),
-  auth: {
-    user: process.env.EMAIL_SERVER_USER,
-    pass: process.env.EMAIL_SERVER_PASSWORD,
-  },
-});
+const EMAIL_REQUIRED_VARS = [
+  "EMAIL_SERVER_HOST",
+  "EMAIL_SERVER_USER",
+  "EMAIL_SERVER_PASSWORD",
+  "EMAIL_FROM",
+] as const;
+
+export function validateSmtpConfig(): { valid: boolean; missing: string[] } {
+  const missing = EMAIL_REQUIRED_VARS.filter(
+    (v) => !process.env[v] || process.env[v]!.trim() === ""
+  );
+  return { valid: missing.length === 0, missing: [...missing] };
+}
+
+function createTransporter(): nodemailer.Transporter {
+  const { valid, missing } = validateSmtpConfig();
+  if (!valid) {
+    console.error(
+      `[FollowUp] SMTP config validation failed — missing: ${missing.join(", ")}`
+    );
+  }
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_SERVER_HOST,
+    port: Number(process.env.EMAIL_SERVER_PORT || 587),
+    auth: {
+      user: process.env.EMAIL_SERVER_USER,
+      pass: process.env.EMAIL_SERVER_PASSWORD,
+    },
+  });
+}
+
+const transporter = createTransporter();
 
 export function getFollowUpTemplate(
   step: number,
@@ -68,23 +92,52 @@ ${fromName}`,
   };
 }
 
-export async function sendFollowUp(invoiceId: string) {
+export interface SendFollowUpResult {
+  step?: number;
+  subject?: string;
+  error?: string;
+}
+
+export async function sendFollowUp(invoiceId: string, customSubject?: string, customBody?: string): Promise<SendFollowUpResult> {
+  const { valid } = validateSmtpConfig();
+  if (!valid) {
+    const err = "SMTP configuration is missing or incomplete. Please contact support.";
+    console.error(
+      `[FollowUp] Failed to send follow-up for invoice=${invoiceId}: SMTP config invalid`
+    );
+    return { error: err };
+  }
+
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
     include: { user: true },
   });
-  if (!invoice || invoice.status === "paid" || invoice.status === "cancelled") return;
+  if (!invoice || invoice.status === "paid" || invoice.status === "cancelled") {
+    return {};
+  }
 
   const nextStep = Math.min((invoice.followUpStep || 0) + 1, 3);
-  const { subject, body } = getFollowUpTemplate(nextStep, invoice);
+  const { subject: tmplSubject, body: tmplBody } = getFollowUpTemplate(nextStep, invoice);
+  const subject = customSubject || tmplSubject;
+  const body = customBody || tmplBody;
 
-  await transporter.sendMail({
-    from: `"${invoice.user.name || "Invoice Agent"}" <${process.env.EMAIL_FROM}>`,
-    to: invoice.clientEmail,
-    replyTo: invoice.user.email || undefined,
-    subject,
-    text: body,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"${invoice.user.name || "Invoice Agent"}" <${process.env.EMAIL_FROM}>`,
+      to: invoice.clientEmail,
+      replyTo: invoice.user.email || undefined,
+      subject,
+      text: body,
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[FollowUp] SMTP error for invoice=${invoiceId} step=${nextStep}: ${errorMsg}`
+    );
+    return {
+      error: "Failed to send follow-up email. Please try again later or contact support.",
+    };
+  }
 
   const now = new Date();
   const nextFollowUp =

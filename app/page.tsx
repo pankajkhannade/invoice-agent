@@ -24,7 +24,7 @@ export default function Home() {
         </p>
         <div className="flex gap-4 justify-center">
           <Link href="/register" className="bg-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-indigo-700">
-            Start 7-day free trial
+            Start free — 1 invoice included
           </Link>
           <Link href="/pricing" className="border border-gray-300 px-8 py-4 rounded-xl text-lg font-semibold text-gray-700 hover:border-indigo-400">
             See pricing

@@ -9,6 +9,18 @@ export async function GET() {
 
   const userId = // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (session.user as any).id;
+
+  // Auto-detect overdue invoices: any "pending" invoice past its dueDate becomes "overdue"
+  const now = new Date();
+  await prisma.invoice.updateMany({
+    where: {
+      userId,
+      status: "pending",
+      dueDate: { lt: now },
+    },
+    data: { status: "overdue" },
+  });
+
   const invoices = await prisma.invoice.findMany({
     where: { userId },
     include: { followUps: true },
@@ -31,11 +43,23 @@ export async function POST(req: NextRequest) {
     const existingCount = await prisma.invoice.count({ where: { userId } });
     if (existingCount >= 1) {
       return NextResponse.json(
-        { error: "Free plan includes 1 invoice. Upgrade to add more." },
+        { error: "Free plan includes 1 invoice. Upgrade to add more.", upgrade: true },
+        { status: 403 }
+      );
+    }
+  } else if (user?.plan === "starter") {
+    // Enforce 20 active invoice cap for Starter plan
+    const existingCount = await prisma.invoice.count({
+      where: { userId, status: { notIn: ["cancelled", "paid"] } },
+    });
+    if (existingCount >= 20) {
+      return NextResponse.json(
+        { error: "Starter plan is limited to 20 active invoices. Upgrade to Growth for unlimited.", upgrade: true },
         { status: 403 }
       );
     }
   }
+  // Growth plan: no invoice limit
 
   const { clientName, clientEmail, amount, currency, dueDate, notes } = await req.json();
 

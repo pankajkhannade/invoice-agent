@@ -54,7 +54,23 @@ model User {
   accounts             Account[]
   sessions             Session[]
   invoices             Invoice[]
+  escalationConfig     EscalationConfig?
   createdAt            DateTime  @default(now())
+}
+
+model EscalationConfig {
+  id                          String   @id @default(cuid())
+  userId                      String   @unique
+  user                        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstFollowUpDays           Int      @default(7)
+  secondFollowUpDays          Int      @default(14)
+  thirdFollowUpDays            Int      @default(21)
+  firstFollowUpTone           String   @default("friendly")
+  secondFollowUpTone          String   @default("firm")
+  thirdFollowUpTone           String   @default("final")
+  autoEscalateAfterDays       Int      @default(14)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
 }
 
 model Invoice {

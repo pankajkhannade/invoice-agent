@@ -27,7 +27,12 @@ export default function RegisterPage() {
       setLoading(false);
       return;
     }
-    await signIn("credentials", { email, password, redirect: false });
+    const signInResult = await signIn("credentials", { email, password, redirect: false });
+    if (signInResult?.error) {
+      setError("Account created but sign-in failed. Please sign in manually.");
+      setLoading(false);
+      return;
+    }
     router.push("/dashboard");
   }
 
