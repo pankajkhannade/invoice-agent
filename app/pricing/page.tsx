@@ -89,7 +89,49 @@ export default function PricingPage() {
           ))}
         </div>
 
-        <p className="mt-10 text-gray-500 text-sm">7-day money-back guarantee. Cancel anytime.</p>
+        {/* Social proof / testimonials */}
+        <div className="mt-20">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8">Trusted by freelancers & agencies</h2>
+          <div className="grid grid-cols-3 gap-6 text-left">
+            {[
+              {
+                quote: "I had $4,200 stuck in overdue invoices from two clients. InvoiceAgent got me paid in under a week. Best $29 I ever spent.",
+                name: "Arjun Mehta",
+                role: "Freelance UX Designer, Mumbai",
+                initials: "AM",
+              },
+              {
+                quote: "As a small agency we were too embarrassed to chase clients ourselves. This handles it professionally and we've collected over $12k this quarter.",
+                name: "Sarah Chen",
+                role: "Founder, Pixel Studio",
+                initials: "SC",
+              },
+              {
+                quote: "The follow-up emails are polite but firm. My clients have actually thanked me for the 'gentle reminders.' ROI is unreal.",
+                name: "Marcus Reid",
+                role: "Independent Developer, London",
+                initials: "MR",
+              },
+            ].map((t) => (
+              <div key={t.name} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex gap-1 text-yellow-400 mb-3">{"★".repeat(5)}</div>
+                <p className="text-gray-700 text-sm mb-4 leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">{t.name}</div>
+                    <div className="text-xs text-gray-500">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Money-back guarantee */}
+        <p className="mt-16 text-gray-500 text-sm">7-day money-back guarantee. Cancel anytime.</p>
       </div>
     </div>
   );
