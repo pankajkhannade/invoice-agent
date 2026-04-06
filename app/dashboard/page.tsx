@@ -80,6 +80,8 @@ function DashboardContent() {
         <div className="flex items-center gap-6">
           <Link href="/dashboard/analytics" className="text-sm text-gray-500 hover:text-gray-700">Analytics</Link>
           <Link href="/dashboard/clients" className="text-sm text-gray-500 hover:text-gray-700">Clients</Link>
+          <Link href="/dashboard/invoices/templates" className="text-sm text-gray-500 hover:text-gray-700">Templates</Link>
+          <Link href="/dashboard/invoices/bulk" className="text-sm text-gray-500 hover:text-gray-700">Bulk Upload</Link>
           <Link href="/dashboard/settings" className="text-sm text-gray-500 hover:text-gray-700">Settings</Link>
           <span className="text-sm text-gray-600">{session?.user?.email}</span>
           <Link href="/pricing" className="text-sm text-indigo-600 font-medium">Upgrade</Link>
@@ -92,10 +94,21 @@ function DashboardContent() {
 
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-          <Link href="/dashboard/invoices/new"
-            className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700">
-            + Add invoice
-          </Link>
+          <div className="flex items-center gap-3">
+            <a
+              href="/api/invoices/export"
+              className="bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50"
+            >
+              Export CSV
+            </a>
+            <Link href="/dashboard/invoices/bulk" className="bg-white border border-indigo-200 text-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-50">
+              Import CSV
+            </Link>
+            <Link href="/dashboard/invoices/new"
+              className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700">
+              + Add invoice
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">

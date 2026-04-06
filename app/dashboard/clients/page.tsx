@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type FollowUp = { id: string; step: number; sentAt: string };
+
 type Invoice = {
   id: string;
   clientName: string;
@@ -12,7 +14,11 @@ type Invoice = {
   currency: string;
   dueDate: string;
   status: string;
+  notes: string | null;
   followUpStep: number;
+  paidAt: string | null;
+  createdAt: string;
+  followUps: FollowUp[];
 };
 
 type ClientGroup = {
@@ -24,6 +30,8 @@ type ClientGroup = {
   paidAmount: number;
   invoiceCount: number;
   overdueCount: number;
+  avgDaysToPayment: number | null;
+  lastInvoiceDate: string | null;
 };
 
 export default function ClientsPage() {
@@ -56,14 +64,33 @@ export default function ClientsPage() {
                 paidAmount: 0,
                 invoiceCount: 0,
                 overdueCount: 0,
+                avgDaysToPayment: null,
+                lastInvoiceDate: null,
               });
             }
             const g = map.get(inv.clientEmail)!;
             g.invoices.push(inv);
             g.totalAmount += inv.amount;
             g.invoiceCount += 1;
-            if (inv.status === "paid") g.paidAmount += inv.amount;
-            else if (inv.status !== "cancelled") {
+
+            // last invoice date
+            const invDate = new Date(inv.createdAt);
+            if (!g.lastInvoiceDate || invDate > new Date(g.lastInvoiceDate)) {
+              g.lastInvoiceDate = inv.createdAt;
+            }
+
+            if (inv.status === "paid") {
+              g.paidAmount += inv.amount;
+              // avg days to payment
+              const created = new Date(inv.createdAt).getTime();
+              const paid = inv.paidAt ? new Date(inv.paidAt).getTime() : Date.now();
+              const days = Math.round((paid - created) / (1000 * 60 * 60 * 24));
+              if (g.avgDaysToPayment === null) g.avgDaysToPayment = days;
+              else g.avgDaysToPayment = Math.round(
+                (g.avgDaysToPayment * (g.invoices.filter((i) => i.status === "paid").length - 1) + days) /
+                g.invoices.filter((i) => i.status === "paid").length
+              );
+            } else if (inv.status !== "cancelled") {
               g.outstandingAmount += inv.amount;
               if (inv.status === "overdue") g.overdueCount += 1;
             }
@@ -112,11 +139,22 @@ export default function ClientsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-            <p className="text-gray-500 text-sm mt-1">{clientGroups.length} clients · grouped by email</p>
+            <p className="text-gray-500 text-sm mt-1">{clientGroups.length} clients · sorted by outstanding amount</p>
           </div>
-          <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-full">
-            Growth Plan
-          </span>
+          <div className="flex gap-3">
+            <Link
+              href="/dashboard/invoices/templates"
+              className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
+            >
+              Browse Templates
+            </Link>
+            <Link
+              href="/dashboard/invoices/new"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700"
+            >
+              + Add Invoice
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6">
@@ -140,6 +178,9 @@ export default function ClientsPage() {
                   <div className="text-xs text-gray-500">{g.clientEmail}</div>
                   <div className="flex gap-3 mt-1 text-xs">
                     <span className="text-gray-500">{g.invoiceCount} invoices</span>
+                    {g.outstandingAmount > 0 && (
+                      <span className="text-red-600 font-medium">${g.outstandingAmount.toFixed(0)} due</span>
+                    )}
                     {g.overdueCount > 0 && (
                       <span className="text-red-600 font-medium">{g.overdueCount} overdue</span>
                     )}
@@ -159,14 +200,24 @@ export default function ClientsPage() {
               </div>
             ) : (
               <div className="bg-white rounded-xl border overflow-hidden">
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{selected.clientName}</h2>
-                    <p className="text-gray-500 text-sm">{selected.clientEmail}</p>
+                <div className="px-6 py-4 border-b">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">{selected.clientName}</h2>
+                      <p className="text-gray-500 text-sm">{selected.clientEmail}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/dashboard/invoices/new?clientName=${encodeURIComponent(selected.clientName)}&clientEmail=${encodeURIComponent(selected.clientEmail)}`}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700"
+                      >
+                        + Add invoice
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex gap-6 text-sm">
+                  <div className="grid grid-cols-5 gap-4 text-sm">
                     <div className="text-center">
-                      <div className="text-xs text-gray-500">Total</div>
+                      <div className="text-xs text-gray-500">Total billed</div>
                       <div className="font-bold text-gray-900">${selected.totalAmount.toFixed(0)}</div>
                     </div>
                     <div className="text-center">
@@ -177,12 +228,26 @@ export default function ClientsPage() {
                       <div className="text-xs text-gray-500">Outstanding</div>
                       <div className="font-bold text-red-600">${selected.outstandingAmount.toFixed(0)}</div>
                     </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500">Avg days to pay</div>
+                      <div className="font-bold text-gray-900">
+                        {selected.avgDaysToPayment !== null ? `${selected.avgDaysToPayment}d` : "—"}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500">Last invoice</div>
+                      <div className="font-bold text-gray-900 text-xs">
+                        {selected.lastInvoiceDate
+                          ? new Date(selected.lastInvoiceDate).toLocaleDateString()
+                          : "—"}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      {["Amount", "Due date", "Status", "Follow-ups", "Actions"].map(h => (
+                      {["Amount", "Due date", "Status", "Follow-ups", "Actions"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 text-gray-600 font-medium">{h}</th>
                       ))}
                     </tr>
