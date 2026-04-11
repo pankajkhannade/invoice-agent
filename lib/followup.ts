@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
+import { formatCurrency } from "./currency";
 
 const EMAIL_REQUIRED_VARS = [
   "EMAIL_SERVER_HOST",
@@ -39,7 +40,7 @@ export function getFollowUpTemplate(
   invoice: { id: string; clientName: string; clientEmail: string; amount: number; currency: string; dueDate: Date; user: { name: string | null; email: string | null } }
 ) {
   const fromName = invoice.user.name || "Your Service Provider";
-  const amount = `${invoice.currency} ${invoice.amount.toFixed(2)}`;
+  const amount = formatCurrency(invoice.amount, invoice.currency);
   const due = new Date(invoice.dueDate).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
