@@ -69,6 +69,19 @@ const TEMPLATES: Template[] = [
     bg: "bg-gray-50",
     border: "border-gray-300",
   },
+  {
+    id: "gst",
+    name: "GST / INR",
+    description: "Indian rupee invoice with GST details — for Indian freelancers & agencies.",
+    emoji: "🇮🇳",
+    clientNamePlaceholder: "Client Name",
+    amountPlaceholder: "50,000",
+    currency: "INR",
+    dueDateOffsetDays: 30,
+    defaultNotes: "GSTIN: XXXXXXXXXXXXXX | SAC: 999XXX | Net 30. Payment via NEFT/RTGS/UPI.",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+  },
 ];
 
 function buildTemplateQS(t: Template): string {

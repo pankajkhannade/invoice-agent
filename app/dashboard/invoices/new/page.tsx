@@ -19,6 +19,7 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
   { id: "detailed", name: "Detailed", emoji: "📊", clientName: "", currency: "USD", dueDateOffset: 14, notes: "Thank you for your business. Payment due within 14 days." },
   { id: "creative", name: "Creative", emoji: "🎨", clientName: "", currency: "USD", dueDateOffset: 21, notes: "Includes 2 rounds of revisions. Additional revisions billed separately." },
   { id: "minimal", name: "Minimal", emoji: "⚡", clientName: "", currency: "USD", dueDateOffset: 7, notes: "Net 7. PO# required on remittance." },
+  { id: "gst", name: "GST / INR", emoji: "🇮🇳", clientName: "", currency: "INR", dueDateOffset: 30, notes: "GSTIN: XXXXXXXXXXXXXX | SAC: XXXXX | Net 30. Payment to be made via NEFT/RTGS." },
 ];
 
 function addDays(days: number): string {
