@@ -68,6 +68,9 @@ function DashboardContent() {
     return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>;
   }
 
+  const paid = invoices.filter(i => i.status === "paid");
+  const totalCollected = paid.reduce((s, i) => s + i.amount, 0);
+  const collectionRate = invoices.length > 0 ? Math.round((paid.length / invoices.length) * 100) : 0;
   const overdue = invoices.filter(i => i.status === "overdue").length;
   const totalOwed = invoices
     .filter(i => i.status !== "paid" && i.status !== "cancelled")
@@ -111,7 +114,11 @@ function DashboardContent() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-xl border p-5">
+            <div className="text-sm text-gray-500 mb-1">Total collected</div>
+            <div className="text-2xl font-bold text-green-600">${totalCollected.toFixed(0)}</div>
+          </div>
           <div className="bg-white rounded-xl border p-5">
             <div className="text-sm text-gray-500 mb-1">Total outstanding</div>
             <div className="text-2xl font-bold text-gray-900">${totalOwed.toFixed(0)}</div>
@@ -121,8 +128,8 @@ function DashboardContent() {
             <div className="text-2xl font-bold text-red-600">{overdue}</div>
           </div>
           <div className="bg-white rounded-xl border p-5">
-            <div className="text-sm text-gray-500 mb-1">Total invoices</div>
-            <div className="text-2xl font-bold text-gray-900">{invoices.length}</div>
+            <div className="text-sm text-gray-500 mb-1">Collection rate</div>
+            <div className="text-2xl font-bold text-indigo-600">{collectionRate}%</div>
           </div>
         </div>
 
