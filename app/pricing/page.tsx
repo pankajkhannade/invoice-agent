@@ -6,19 +6,46 @@ import Link from "next/link";
 
 const plans = [
   {
+    key: "free",
+    name: "Free",
+    price: 0,
+    desc: "For freelancers just getting started",
+    features: [
+      "3 invoices per month",
+      "Basic follow-up sequences",
+      "Invoice dashboard",
+      "CSV export",
+    ],
+    cta: "Get started free",
+    highlight: false,
+    badge: "No credit card",
+  },
+  {
     key: "starter",
     name: "Starter",
     price: 29,
-    desc: "Perfect for solo freelancers",
-    features: ["Up to 20 active invoices", "3-step follow-up sequences", "Email reminders", "Invoice dashboard"],
+    desc: "For solo freelancers growing their practice",
+    features: [
+      "Up to 20 active invoices",
+      "3-step follow-up sequences",
+      "Email reminders",
+      "Invoice dashboard",
+    ],
     cta: "Start Starter plan",
+    highlight: false,
   },
   {
     key: "growth",
     name: "Growth",
     price: 59,
     desc: "For agencies & power users",
-    features: ["Unlimited invoices", "Custom escalation rules", "Multi-client management", "Analytics dashboard", "Priority support"],
+    features: [
+      "Unlimited invoices",
+      "Custom escalation rules",
+      "Multi-client management",
+      "Analytics dashboard",
+      "Priority support",
+    ],
     cta: "Start Growth plan",
     highlight: true,
   },
@@ -32,6 +59,11 @@ export default function PricingPage() {
   async function handleChoose(planKey: string) {
     if (!session) {
       router.push("/register");
+      return;
+    }
+    if (planKey === "free") {
+      // Free plan doesn't need Stripe — just redirect to dashboard
+      router.push("/dashboard");
       return;
     }
     setLoading(planKey);
@@ -56,16 +88,32 @@ export default function PricingPage() {
         )}
       </nav>
 
-      <div className="max-w-4xl mx-auto px-8 py-20 text-center">
+      <div className="max-w-5xl mx-auto px-8 py-20 text-center">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Simple, transparent pricing</h1>
         <p className="text-xl text-gray-600 mb-16">Recover one invoice and pay for the year. No hidden fees.</p>
 
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-3 gap-6">
           {plans.map(p => (
             <div key={p.key}
-              className={`rounded-2xl p-8 border text-left ${p.highlight ? "border-indigo-500 shadow-lg bg-indigo-600 text-white" : "border-gray-200 bg-white"}`}>
+              className={`rounded-2xl p-8 border text-left ${
+                p.highlight
+                  ? "border-indigo-500 shadow-lg bg-indigo-600 text-white"
+                  : p.key === "free"
+                  ? "border-gray-200 bg-white"
+                  : "border-gray-200 bg-white"
+              }`}>
+              {p.badge && (
+                <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2 ${
+                  p.highlight ? "bg-indigo-400 text-white" : "bg-green-100 text-green-700"
+                }`}>{p.badge}</span>
+              )}
               <div className={`text-sm font-semibold mb-1 ${p.highlight ? "text-indigo-200" : "text-indigo-600"}`}>{p.name}</div>
-              <div className="text-4xl font-extrabold mb-1">${p.price}<span className="text-lg font-normal opacity-70">/mo</span></div>
+              <div className="text-4xl font-extrabold mb-1">
+                {p.price === 0 ? "Free" : `$${p.price}`}
+                <span className="text-lg font-normal opacity-70">
+                  {p.price === 0 ? " forever" : "/mo"}
+                </span>
+              </div>
               <p className={`text-sm mb-6 ${p.highlight ? "text-indigo-200" : "text-gray-500"}`}>{p.desc}</p>
               <ul className="space-y-2 mb-8">
                 {p.features.map(f => (
@@ -80,6 +128,8 @@ export default function PricingPage() {
                 className={`w-full py-3 rounded-xl font-semibold transition ${
                   p.highlight
                     ? "bg-white text-indigo-700 hover:bg-indigo-50"
+                    : p.key === "free"
+                    ? "bg-green-600 text-white hover:bg-green-700"
                     : "bg-indigo-600 text-white hover:bg-indigo-700"
                 } disabled:opacity-50`}
               >
@@ -87,6 +137,41 @@ export default function PricingPage() {
               </button>
             </div>
           ))}
+        </div>
+
+        {/* Comparison table */}
+        <div className="mt-20 text-left">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Compare plans</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  <th className="text-left px-6 py-3 text-gray-600 font-medium">Feature</th>
+                  <th className="text-center px-4 py-3 text-gray-600 font-medium">Free</th>
+                  <th className="text-center px-4 py-3 text-gray-600 font-medium">Starter</th>
+                  <th className="text-center px-4 py-3 text-indigo-600 font-medium font-semibold">Growth</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {[
+                  ["Invoices per month", "3", "20", "Unlimited"],
+                  ["Follow-up steps", "3", "3", "Custom"],
+                  ["CSV export", "✓", "✓", "✓"],
+                  ["Email reminders", "✓", "✓", "✓"],
+                  ["Escalation rules", "—", "—", "✓"],
+                  ["Analytics dashboard", "—", "—", "✓"],
+                  ["Priority support", "—", "—", "✓"],
+                ].map(([feature, free, starter, growth]) => (
+                  <tr key={feature} className="hover:bg-gray-50">
+                    <td className="px-6 py-3 font-medium text-gray-800">{feature}</td>
+                    <td className="px-4 py-3 text-center text-gray-500">{free}</td>
+                    <td className="px-4 py-3 text-center text-gray-500">{starter}</td>
+                    <td className="px-4 py-3 text-center text-indigo-600 font-semibold">{growth}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Social proof / testimonials */}
@@ -131,7 +216,7 @@ export default function PricingPage() {
         </div>
 
         {/* Money-back guarantee */}
-        <p className="mt-16 text-gray-500 text-sm">7-day money-back guarantee. Cancel anytime.</p>
+        <p className="mt-16 text-gray-500 text-sm">7-day free trial on paid plans. Cancel anytime.</p>
       </div>
     </div>
   );

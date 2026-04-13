@@ -42,7 +42,7 @@ export default function RegisterPage() {
         <div className="mb-8 text-center">
           <Link href="/" className="text-xl font-bold text-indigo-700">InvoiceAgent</Link>
           <h1 className="text-2xl font-bold text-gray-900 mt-4">Create your account</h1>
-          <p className="text-gray-500 text-sm mt-1">7-day free trial — no credit card required</p>
+          <p className="text-gray-500 text-sm mt-1">Start free — upgrade to paid plans anytime</p>
         </div>
 
         <button
