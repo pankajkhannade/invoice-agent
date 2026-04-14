@@ -1,4 +1,42 @@
+"use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+function LiveStats() {
+  const [stats, setStats] = useState<{ totalInvoices: number; totalUsers: number; collectionRate: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/site-stats")
+      .then((r) => r.json())
+      .then((data) => setStats(data))
+      .catch(() => null);
+  }, []);
+
+  if (!stats) return null;
+
+  return (
+    <div className="bg-white/80 border-y border-gray-200 py-8 mb-4">
+      <div className="max-w-5xl mx-auto px-8">
+        <div className="flex items-center justify-center gap-12">
+          <div className="text-center">
+            <div className="text-2xl font-extrabold text-gray-900">{stats.totalInvoices.toLocaleString()}</div>
+            <div className="text-sm text-gray-500">Invoices processed</div>
+          </div>
+          <div className="w-px h-10 bg-gray-300" />
+          <div className="text-center">
+            <div className="text-2xl font-extrabold text-gray-900">{stats.totalUsers.toLocaleString()}</div>
+            <div className="text-sm text-gray-500">Freelancers &amp; agencies</div>
+          </div>
+          <div className="w-px h-10 bg-gray-300" />
+          <div className="text-center">
+            <div className="text-2xl font-extrabold text-green-600">{stats.collectionRate}%</div>
+            <div className="text-sm text-gray-500">Collection rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -10,6 +48,8 @@ export default function Home() {
           <Link href="/register" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">Get started</Link>
         </div>
       </nav>
+
+      <LiveStats />
 
       <section className="max-w-4xl mx-auto px-8 py-24 text-center">
         <div className="inline-block bg-indigo-100 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full mb-6">
