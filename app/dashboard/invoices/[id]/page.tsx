@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import FollowUpModal from "@/app/dashboard/FollowUpModal";
 
 type FollowUp = {
   id: string;
@@ -44,6 +45,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [previewModal, setPreviewModal] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -254,10 +256,19 @@ export default function InvoiceDetailPage() {
           )}
         </div>
 
-        {/* Status actions */}
+        {/* Actions */}
         <div className="bg-white rounded-xl border p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            {isOpen && invoice.followUpStep < 3 && (
+              <button
+                onClick={() => setPreviewModal(true)}
+                disabled={updating}
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
+              >
+                Send next follow-up
+              </button>
+            )}
             {isOpen && (
               <>
                 <button
@@ -288,6 +299,22 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       </div>
+
+      {invoice && previewModal && (
+        <FollowUpModal
+          invoiceId={invoice.id}
+          invoiceName={invoice.clientName}
+          step={invoice.followUpStep + 1}
+          onClose={() => setPreviewModal(false)}
+          onSent={() => {
+            setPreviewModal(false);
+            setUpdating(true);
+            fetch(`/api/invoices/${invoice.id}`)
+              .then((r) => r.json())
+              .then((data) => { setInvoice(data); setUpdating(false); });
+          }}
+        />
+      )}
     </div>
   );
 }
