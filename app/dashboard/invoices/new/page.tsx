@@ -46,11 +46,19 @@ function NewInvoiceContent() {
     dueDate: addDays(prefilledDueDateOffset),
     notes: prefilledNotes,
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function set(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   }
 
   function applyQuickTemplate(t: QuickTemplate) {
@@ -63,15 +71,36 @@ function NewInvoiceContent() {
     }));
   }
 
+  function validateForm(): boolean {
+    const errors: Record<string, string> = {};
+    const amt = parseFloat(form.amount);
+    if (!form.amount || isNaN(amt) || amt <= 0) {
+      errors.amount = "Please enter a valid amount greater than 0";
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!form.dueDate || new Date(form.dueDate) < today) {
+      errors.dueDate = "Due date cannot be in the past";
+    }
+    if (!form.clientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.clientEmail)) {
+      errors.clientEmail = "Please enter a valid email address";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateForm()) return;
     setLoading(true);
     setError("");
+
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+
     if (!res.ok) {
       const data = await res.json();
       if (data.upgrade) {
@@ -83,6 +112,7 @@ function NewInvoiceContent() {
       setLoading(false);
       return;
     }
+
     const created = await res.json();
     const qs = new URLSearchParams({
       client: encodeURIComponent(created.clientName || form.clientName),
@@ -159,14 +189,16 @@ function NewInvoiceContent() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Client email *</label>
                 <input type="email" value={form.clientEmail} onChange={(e) => set("clientEmail", e.target.value)} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${fieldErrors.clientEmail ? "border-red-400 bg-red-50" : "border-gray-300"}`} />
+                {fieldErrors.clientEmail && <p className="text-red-600 text-xs mt-1">{fieldErrors.clientEmail}</p>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
                 <input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => set("amount", e.target.value)} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${fieldErrors.amount ? "border-red-400 bg-red-50" : "border-gray-300"}`} />
+                {fieldErrors.amount && <p className="text-red-600 text-xs mt-1">{fieldErrors.amount}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
@@ -181,7 +213,8 @@ function NewInvoiceContent() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Due date *</label>
               <input type="date" value={form.dueDate} onChange={(e) => set("dueDate", e.target.value)} required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${fieldErrors.dueDate ? "border-red-400 bg-red-50" : "border-gray-300"}`} />
+              {fieldErrors.dueDate && <p className="text-red-600 text-xs mt-1">{fieldErrors.dueDate}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
