@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import FollowUpModal from "./FollowUpModal";
+import { formatCurrency } from "@/lib/currency";
 
 type Invoice = {
   id: string;
@@ -117,11 +118,11 @@ function DashboardContent() {
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border p-5">
             <div className="text-sm text-gray-500 mb-1">Total collected</div>
-            <div className="text-2xl font-bold text-green-600">${totalCollected.toFixed(0)}</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalCollected, "USD")}</div>
           </div>
           <div className="bg-white rounded-xl border p-5">
             <div className="text-sm text-gray-500 mb-1">Total outstanding</div>
-            <div className="text-2xl font-bold text-gray-900">${totalOwed.toFixed(0)}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatCurrency(totalOwed, "USD")}</div>
           </div>
           <div className="bg-white rounded-xl border p-5">
             <div className="text-sm text-gray-500 mb-1">Overdue invoices</div>
@@ -159,7 +160,7 @@ function DashboardContent() {
                       <div className="font-medium text-gray-900">{inv.clientName}</div>
                       <div className="text-gray-500">{inv.clientEmail}</div>
                     </td>
-                    <td className="px-4 py-4 font-semibold">{inv.currency} {inv.amount.toFixed(2)}</td>
+                    <td className="px-4 py-4 font-semibold">{formatCurrency(inv.amount, inv.currency)}</td>
                     <td className="px-4 py-4 text-gray-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
                     <td className="px-4 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[inv.status] || ""}`}>
