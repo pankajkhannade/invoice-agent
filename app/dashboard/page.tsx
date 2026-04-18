@@ -42,6 +42,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [previewModal, setPreviewModal] = useState<{ invoiceId: string; invoiceName: string; step: number } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -69,11 +70,15 @@ function DashboardContent() {
     return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>;
   }
 
-  const paid = invoices.filter(i => i.status === "paid");
+  const filteredInvoices = statusFilter === "all"
+    ? invoices
+    : invoices.filter(i => i.status === statusFilter);
+
+  const paid = filteredInvoices.filter(i => i.status === "paid");
   const totalCollected = paid.reduce((s, i) => s + i.amount, 0);
-  const collectionRate = invoices.length > 0 ? Math.round((paid.length / invoices.length) * 100) : 0;
-  const overdue = invoices.filter(i => i.status === "overdue").length;
-  const totalOwed = invoices
+  const collectionRate = filteredInvoices.length > 0 ? Math.round((paid.length / filteredInvoices.length) * 100) : 0;
+  const overdue = filteredInvoices.filter(i => i.status === "overdue").length;
+  const totalOwed = filteredInvoices
     .filter(i => i.status !== "paid" && i.status !== "cancelled")
     .reduce((s, i) => s + i.amount, 0);
 
@@ -134,14 +139,56 @@ function DashboardContent() {
           </div>
         </div>
 
-        {invoices.length === 0 ? (
+        {invoices.length > 0 && (
+          <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+            {[
+              { key: "all", label: "All", count: invoices.length },
+              { key: "pending", label: "Outstanding", count: invoices.filter(i => i.status === "pending").length },
+              { key: "overdue", label: "Overdue", count: invoices.filter(i => i.status === "overdue").length },
+              { key: "paid", label: "Paid", count: invoices.filter(i => i.status === "paid").length },
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  statusFilter === f.key
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {f.label}
+                {f.count > 0 && (
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                    statusFilter === f.key ? "bg-indigo-100 text-indigo-600" : "bg-gray-200 text-gray-500"
+                  }`}>
+                    {f.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {filteredInvoices.length === 0 ? (
           <div className="bg-white rounded-xl border p-16 text-center">
             <div className="text-4xl mb-4">📄</div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">No invoices yet</h3>
-            <p className="text-gray-500 mb-6">Add your first invoice to start automating follow-ups.</p>
-            <Link href="/dashboard/invoices/new" className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700">
-              Add first invoice
-            </Link>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              {statusFilter === "all" ? "No invoices yet" : `No ${statusFilter} invoices`}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {statusFilter === "all"
+                ? "Add your first invoice to start automating follow-ups."
+                : "Try a different filter or add a new invoice."}
+            </p>
+            {statusFilter === "all" ? (
+              <Link href="/dashboard/invoices/new" className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700">
+                Add first invoice
+              </Link>
+            ) : (
+              <button onClick={() => setStatusFilter("all")} className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50">
+                Show all invoices
+              </button>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden">
@@ -154,7 +201,7 @@ function DashboardContent() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {invoices.map(inv => (
+                {filteredInvoices.map(inv => (
                   <tr key={inv.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}>
                     <td className="px-4 py-4">
                       <div className="font-medium text-gray-900">{inv.clientName}</div>
