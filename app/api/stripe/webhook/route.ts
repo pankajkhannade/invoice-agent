@@ -28,6 +28,29 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (event.type === "customer.subscription.updated") {
+    const sub = event.data.object as Stripe.Subscription;
+    // Sync plan name to user when subscription changes (e.g. trial→paid, plan change)
+    const planName = sub.items.data[0]?.price?.nickname;
+    if (planName) {
+      await prisma.user.updateMany({
+        where: { stripeSubscriptionId: sub.id },
+        data: { plan: planName.toLowerCase() },
+      });
+    }
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = event.data.object as Stripe.Invoice;
+    // Log the failure — user record already exists; a future enhancement
+    // could send an in-app notification or email alert here.
+    const subId = (invoice as unknown as { subscription?: string }).subscription;
+    console.warn(
+      `[Stripe Webhook] Payment failed for customer=${invoice.customer} ` +
+      `subscription=${subId ?? "unknown"} amount_due=${invoice.amount_due}`
+    );
+  }
+
   if (event.type === "customer.subscription.deleted") {
     const sub = event.data.object as Stripe.Subscription;
     await prisma.user.updateMany({
