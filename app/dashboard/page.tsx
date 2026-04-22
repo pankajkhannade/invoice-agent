@@ -77,7 +77,11 @@ function DashboardContent() {
   const paid = filteredInvoices.filter(i => i.status === "paid");
   const totalCollected = paid.reduce((s, i) => s + i.amount, 0);
   const collectionRate = filteredInvoices.length > 0 ? Math.round((paid.length / filteredInvoices.length) * 100) : 0;
-  const overdue = filteredInvoices.filter(i => i.status === "overdue").length;
+  const overdue = filteredInvoices.filter(i => i.status === "overdue");
+  const overdueCount = overdue.length;
+  const mostOverdueDays = overdue.length > 0
+    ? Math.max(...overdue.map(i => Math.floor((Date.now() - new Date(i.dueDate).getTime()) / 86400000)))
+    : 0;
   const totalOwed = filteredInvoices
     .filter(i => i.status !== "paid" && i.status !== "cancelled")
     .reduce((s, i) => s + i.amount, 0);
@@ -131,7 +135,10 @@ function DashboardContent() {
           </div>
           <div className="bg-white rounded-xl border p-5">
             <div className="text-sm text-gray-500 mb-1">Overdue invoices</div>
-            <div className="text-2xl font-bold text-red-600">{overdue}</div>
+            <div className="text-2xl font-bold text-red-600">{overdueCount}</div>
+            {mostOverdueDays > 0 && (
+              <div className="text-xs text-red-500 mt-0.5">~{mostOverdueDays}d oldest</div>
+            )}
           </div>
           <div className="bg-white rounded-xl border p-5">
             <div className="text-sm text-gray-500 mb-1">Collection rate</div>
