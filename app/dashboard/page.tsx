@@ -25,6 +25,20 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-600",
 };
 
+/** Returns [label, cssClasses] for the due-date urgency tag shown in the table */
+function getDueDateUrgency(dueDate: string, status: string): [string, string] {
+  if (status === "paid" || status === "cancelled") return ["", ""];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  const days = Math.floor((due.getTime() - today.getTime()) / 86400000);
+  if (days < 0) return [`${Math.abs(days)}d overdue`, "text-red-600 font-medium"];
+  if (days === 0) return ["Due today", "text-orange-600 font-medium"];
+  if (days <= 7) return [`Due in ${days}d`, "text-orange-500 font-medium"];
+  return [`Due in ${days}d`, "text-gray-400"];
+}
+
 function UpgradeBanner() {
   const searchParams = useSearchParams();
   if (!searchParams.get("upgraded")) return null;
@@ -215,7 +229,13 @@ function DashboardContent() {
                       <div className="text-gray-500">{inv.clientEmail}</div>
                     </td>
                     <td className="px-4 py-4 font-semibold">{formatCurrency(inv.amount, inv.currency)}</td>
-                    <td className="px-4 py-4 text-gray-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                    <td className="px-4 py-4">
+                      <div className="text-gray-600">{new Date(inv.dueDate).toLocaleDateString()}</div>
+                      {(() => {
+                        const [label, cls] = getDueDateUrgency(inv.dueDate, inv.status);
+                        return label ? <div className={`text-xs ${cls}`}>{label}</div> : null;
+                      })()}
+                    </td>
                     <td className="px-4 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[inv.status] || ""}`}>
                         {inv.status}
